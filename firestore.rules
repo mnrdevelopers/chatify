@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isParticipant(chatId) {
+      return isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
+    }
+    
+    function isRecieverBlocked(receiverId) {
+      // Check if the receiver has blocked the current sender
+      return request.auth.uid in get(/databases/$(database)/documents/users/$(receiverId)).data.blockedUsers;
+    }
+
+    // --- Collections ---
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      // Only allow the owner of the document to update their own data
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Chat Metadata Rules
+    match /chats/{chatId} {
+      // Allow read if you are a participant in the chat
+      allow read: if isSignedIn() && (request.auth.uid in resource.data.participants);
+      
+      // Allow creating a new chat if you are listed as a participant
+      allow create: if isSignedIn() && (request.auth.uid in request.resource.data.participants);
+
+      // Allow updating (typing, pinned, unreadCount, lastMessage, etc.) if already a participant
+      allow update: if isSignedIn() && (request.auth.uid in resource.data.participants);
+    }
+
+    // Message Rules
+    match /chats/{chatId}/messages/{msgId} {
+      // Allow read if you are a participant in the chat
+      allow read: if isParticipant(chatId);
+      
+      // Allow creation of message only if NOT blocked by the receiver
+      allow create: if isParticipant(chatId) 
+                    && request.resource.data.uid == request.auth.uid
+                    && !isRecieverBlocked(request.resource.data.receiverId);
+      
+      // Allow updates (like status='read' or reactions) if participant
+      allow update: if isParticipant(chatId);
+      
+      // Allow deletions if the sender of the message
+      allow delete: if isParticipant(chatId) && resource.data.uid == request.auth.uid;
+    }
+    
+    // WebRTC Call Management Rules
+    match /calls/{chatId} {
+       allow read, write: if isSignedIn();
+    }
+
+    // Call Logs Rules
+    match /callLogs/{logId} {
+      // Only the caller or callee can read or update their own log entries
+      allow read: if isSignedIn() && (
+        resource.data.callerId == request.auth.uid ||
+        resource.data.calleeId == request.auth.uid
+      );
+      allow update: if isSignedIn() && (
+        resource.data.callerId == request.auth.uid ||
+        resource.data.calleeId == request.auth.uid
+      );
+      // Creation is allowed by either participant (from webrtc.js)
+      allow create: if isSignedIn();
+    }
+  }
+}

@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Chatify - Premium Messaging</title>
+    
+    <!-- PWA Setup -->
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="apple-touch-icon" href="./favicon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Google Fonts for Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Boxicons for elegant icons -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./light-mode.css" />
+  </head>
+  <body>
+    <!-- App Container -->
+    <div id="app-container">
+      
+      <!-- Audio Element for Ringtone -->
+      <audio id="ringtone-audio" loop src="https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3"></audio>
+      
+      <!-- PiP Floating Bubble -->
+      <div id="pip-call-bubble" class="hidden" style="position: absolute; bottom: 80px; right: 20px; width: 60px; height: 60px; background: #10b981; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 9997; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 3px solid #1e293b; animation: pulse 2s infinite;">
+         <i class='bx bx-phone-call bx-tada' style="color: white; font-size: 2rem;"></i>
+      </div>
+
+      <!-- Loading Screen -->
+      <div id="loading-screen" class="screen active" style="align-items: center; justify-content: center; background: #0f172a;">
+        <div style="text-align: center;">
+          <i class='bx bxs-chat bx-burst' style="font-size: 5rem; color: #10b981;"></i>
+          <h2 style="color: white; margin-top: 20px; font-weight: bold; letter-spacing: 2px;">Chatify</h2>
+        </div>
+      </div>
+
+      <!-- Login Screen -->
+      <div id="login-screen" class="screen hidden">
+        <div class="login-card">
+          <div class="logo-container">
+            <i class='bx bxs-chat bx-tada'></i>
+          </div>
+          <h1>Welcome to Chatify</h1>
+          <p>Connect instantly with premium messaging.</p>
+          <button id="btn-login" class="cta-button">
+            <i class='bx bxl-google'></i> Sign in with Google
+          </button>
+        </div>
+      </div>
+
+      <!-- Profile Completion Screen -->
+      <div id="profile-screen" class="screen hidden">
+        <div class="login-card" style="text-align: center;">
+          <h2>Complete Your Profile</h2>
+          
+          <div class="avatar-upload-container" style="position: relative; width: 100px; height: 100px; margin: 20px auto;">
+            <img id="profile-setup-avatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%23ffffff' xmlns='http://www.w3.org/2000/svg' style='background:%2394a3b8'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #6366f1; cursor: pointer;" title="Upload Display Picture" />
+            <input type="file" id="input-setup-avatar" accept="image/*" hidden />
+            <div id="setup-avatar-spinner" class="hidden" style="position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-direction:column; z-index: 10;">
+                <i class='bx bx-loader bx-spin' style="color: #6366f1; font-size: 2rem;"></i>
+            </div>
+            <div style="position: absolute; bottom: 0; right: 0; background: #6366f1; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 5;">
+               <i class='bx bxs-camera' style="color: white;"></i>
+            </div>
+          </div>
+          
+          <p>Enter your mobile number so friends can find you.</p>
+          <div class="input-wrapper" style="margin: 20px 0;">
+            <input type="tel" id="input-my-phone" placeholder="e.g. +1234567890" autocomplete="off" />
+          </div>
+          <button id="btn-save-profile" class="cta-button">Save Profile</button>
+        </div>
+      </div>
+
+      <!-- Dashboard Screen (Main Hub) -->
+      <div id="dashboard-screen" class="screen hidden" style="flex-direction: column;">
+        <header class="chat-header" style="position: relative;">
+          <div style="flex: 1; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <h2 id="hub-title" style="font-size: 1.25rem; font-weight: 700; margin-left: 5px;">Chats</h2>
+            <div id="dashboard-menu-container" style="position: relative; display: flex; align-items: center; gap: 4px;">
+              <button id="btn-select-calls" class="icon-button hidden" title="Select Call Logs"><i class='bx bx-check-square'></i></button>
+              <button id="btn-dashboard-menu" class="icon-button"><i class='bx bx-dots-vertical-rounded'></i></button>
+              <div id="dashboard-dropdown" class="hidden glass-dropdown">
+                  <button id="btn-select-chats"><i class='bx bx-check-square'></i> Select Chats</button>
+                  <button id="btn-read-all"><i class='bx bx-envelope-open'></i> Read All</button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Chat Search Bar (Chats tab only - shown/hidden via JS) -->
+        <div id="chat-search-bar" class="chat-search-wrapper hidden">
+            <div class="chat-search-inner">
+                <i class='bx bx-search chat-search-icon'></i>
+                <input type="text" id="input-chat-search" placeholder="Search chats..." autocomplete="off" />
+                <button id="btn-clear-chat-search" class="chat-search-clear hidden">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Bar (Chats tab only - shown/hidden via JS) -->
+        <div id="chat-filters" class="filter-bar hidden">
+            <button class="filter-pill active" data-filter="all">All</button>
+            <button class="filter-pill" data-filter="unread">Unread</button>
+            <button class="filter-pill" data-filter="favourites">Favourites</button>
+        </div>
+
+        <main style="flex: 1; overflow-y: auto; position: relative;">
+          <!-- Selection Action Bar (Hidden) -->
+          <div id="selection-bar" class="hidden glass-action-bar">
+              <span id="selected-count">0 selected</span>
+              <div style="display: flex; gap: 10px;">
+                <button id="btn-cancel-select" class="action-btn-lite">Cancel</button>
+                <button id="btn-delete-selected" class="action-btn-danger">Delete</button>
+              </div>
+          </div>
+          <!-- Chats Tab -->
+          <div id="chats-tab" class="tab-content">
+             <div id="recent-chats-list" class="recent-chats-container">
+                <!-- Recent chats injected here -->
+             </div>
+          </div>
+
+          <!-- Contacts Tab -->
+          <div id="contacts-tab" class="tab-content hidden" style="padding: 20px;">
+            <div class="search-section">
+              <h3>Find a Friend</h3>
+              <div class="search-bar">
+                <input type="tel" id="input-search-phone" placeholder="Search number..." />
+                <button id="btn-search-user" class="icon-button"><i class='bx bx-search'></i></button>
+              </div>
+              <div id="search-results" class="search-results">
+                 <!-- Search results injected here -->
+              </div>
+            </div>
+            
+            <div class="contacts-section" style="margin-top: 2rem;">
+               <h3 style="margin-bottom: 1rem; color: #94a3b8; font-size: 0.9rem; text-transform: uppercase;">Saved Contacts</h3>
+               <div id="contacts-list" class="recent-chats-container">
+                  <!-- Contacts list injected here -->
+               </div>
+            </div>
+          </div>
+
+          <!-- Calls Tab (NEW) -->
+          <div id="calls-tab" class="tab-content hidden">
+            <!-- Calls Selection Bar (hidden by default) -->
+            <div id="calls-selection-bar" class="hidden glass-action-bar">
+                <span id="calls-selected-count">0 selected</span>
+                <div style="display: flex; gap: 10px;">
+                  <button id="btn-cancel-call-select" class="action-btn-lite">Cancel</button>
+                  <button id="btn-delete-call-selected" class="action-btn-danger">Delete</button>
+                </div>
+            </div>
+            <div id="calls-list" class="recent-chats-container">
+              <!-- Call history logs will be injected here -->
+              <div style="padding: 50px 20px; text-align: center; color: #94a3b8;">
+                <i class='bx bx-phone-call' style="font-size: 3rem; margin-bottom: 10px; opacity: 0.3;"></i>
+                <p>No call history yet.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Settings Tab -->
+          <div id="settings-tab" class="tab-content hidden">
+            <div class="settings-content" style="padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+              <div class="avatar-upload-container" style="position: relative; width: 100px; height: 100px;">
+                <img id="settings-avatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%23ffffff' xmlns='http://www.w3.org/2000/svg' style='background:%2394a3b8'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #6366f1; cursor: pointer;" title="Change Display Picture" />
+                <input type="file" id="input-settings-avatar" accept="image/*" hidden />
+                <div id="settings-avatar-spinner" class="hidden" style="position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-direction:column; z-index: 10;">
+                    <i class='bx bx-loader bx-spin' style="color: #6366f1; font-size: 2rem;"></i>
+                </div>
+                <div style="position: absolute; bottom: 0; right: 0; background: #6366f1; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 5;">
+                   <i class='bx bxs-camera' style="color: white;"></i>
+                </div>
+              </div>
+
+              <!-- Profile Info Card -->
+              <div class="settings-profile-card">
+                <div class="settings-profile-info">
+                  <h2 id="settings-name" style="font-size: 1.3rem; font-weight: 700; margin: 0 0 2px;">User Name</h2>
+                  <p id="settings-phone" style="color: #94a3b8; font-size: 0.9rem; margin: 0 0 6px;">Phone Number</p>
+                  <p id="settings-bio" style="color: #cbd5e1; font-size: 0.85rem; font-style: italic; margin: 0; min-height: 18px;"></p>
+                </div>
+                <button id="btn-edit-profile" class="settings-edit-btn" title="Edit Profile">
+                  <i class='bx bx-pencil'></i>
+                </button>
+              </div>
+              
+              <div class="theme-switch-wrapper">
+                 <h4 style="font-size: 0.9rem; margin-bottom: 0;"><i class='bx bx-moon'></i> Dark Mode</h4>
+                 <label class="switch">
+                    <input type="checkbox" id="theme-toggle" checked />
+                    <span class="slider round"></span>
+                 </label>
+              </div>
+
+              <div class="privacy-settings" style="width: 100%; max-width: 300px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 5px;">
+                 <h4 style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 10px;"><i class='bx bx-lock-alt'></i> Privacy Policy</h4>
+                 <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                       <input type="radio" name="privacy_picture" value="everybody" id="radio-privacy-everybody" checked />
+                       <span>Profile Photo: Everybody</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                       <input type="radio" name="privacy_picture" value="contacts" id="radio-privacy-contacts" />
+                       <span>Profile Photo: Contacts Only</span>
+                    </label>
+                 </div>
+              </div>
+
+              <button id="btn-logout" class="cta-button" style="margin-top: 10px; background: #ef4444; color: white;">
+                 <i class='bx bx-log-out'></i> Log Out
+              </button>
+
+              <!-- Delete Account (Danger Zone) -->
+              <div class="danger-zone">
+                <div class="danger-zone-header">
+                  <i class='bx bx-shield-x'></i>
+                  <span>Danger Zone</span>
+                </div>
+                <p class="danger-zone-desc">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                <button id="btn-delete-account" class="danger-zone-btn">
+                  <i class='bx bx-trash'></i> Delete My Account
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+           <button class="nav-item active" data-tab="chats" style="position: relative;">
+              <i class='bx bxs-message-square-dots'></i>
+              <span>Chats</span>
+              <span id="global-unread-badge" class="unread-badge nav-badge hidden">0</span>
+           </button>
+           <button class="nav-item" data-tab="calls">
+              <i class='bx bx-phone'></i>
+              <span>Calls</span>
+           </button>
+           <button class="nav-item" data-tab="contacts">
+              <i class='bx bx-search'></i>
+              <span>Find</span>
+           </button>
+           <button class="nav-item" data-tab="settings">
+              <i class='bx bxs-cog'></i>
+              <span>Settings</span>
+           </button>
+        </nav>
+      </div>
+
+      <!-- Desktop Empty State Screen -->
+      <div id="desktop-empty-state" class="screen hidden" style="flex-direction: column; align-items: center; justify-content: center; background: #0f172a; border-left: 1px solid var(--gl-border);">
+        <i class='bx bx-laptop' style="font-size: 5rem; color: #334155; margin-bottom: 20px;"></i>
+        <h2 style="color: white; font-weight: 300; letter-spacing: 1px;">Chatify Web</h2>
+        <p style="color: #94a3b8; font-size: 0.95rem; margin-top: 10px; max-width: 350px; text-align: center; line-height: 1.5;">Send and receive messages on your computer.<br>End-to-end encrypted premium messaging.</p>
+        <div style="margin-top: 40px; font-size: 0.8rem; color: #475569; display: flex; align-items: center; gap: 5px;">
+           <i class='bx bxs-lock-alt'></i> Your personal messages are private
+        </div>
+      </div>
+
+      <!-- Chat Screen -->
+      <div id="chat-screen" class="screen hidden">
+        <header class="chat-header native-header">
+          <div class="native-header-left">
+            <button id="btn-back-dashboard" class="icon-button back-btn" title="Back">
+               <i class='bx bx-arrow-back'></i>
+            </button>
+            <img id="chat-user-avatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%23ffffff' xmlns='http://www.w3.org/2000/svg' style='background:%2394a3b8'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" alt="Avatar" class="avatar" style="cursor: pointer;" />
+          </div>
+          <div class="native-header-title" id="chat-header-info" style="cursor: pointer;">
+            <span id="chat-user-name">User Name</span>
+            <span id="chat-user-status" style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">offline</span>
+            <span id="chat-typing-indicator" style="font-size: 0.75rem; color: #10b981; font-weight: normal;" class="hidden">typing...</span>
+          </div>
+          <div class="native-header-right" style="position: relative; margin-left: auto; display: flex; align-items: center; gap: 4px;">
+            <button id="btn-dial-video" class="icon-button" title="Video Call"><i class='bx bx-video'></i></button>
+            <button id="btn-dial-audio" class="icon-button" title="Voice Call"><i class='bx bx-phone'></i></button>
+            <button id="btn-chat-options" class="icon-button" title="Options">
+              <i class='bx bx-dots-vertical-rounded'></i>
+            </button>
+            <div id="chat-options-menu" class="options-menu hidden">
+              <button id="btn-toggle-disappearing"><i class='bx bx-timer'></i> Disappearing Msgs</button>
+              <button id="btn-lock-chat"><i class='bx bx-lock-alt'></i> Lock Chat</button>
+              <button id="btn-block-user" style="color: #ef4444;"><i class='bx bx-block'></i> Block User</button>
+              <button id="btn-clear-chat"><i class='bx bx-eraser'></i> Clear Chat</button>
+              <button id="btn-delete-chat" style="color: #ef4444;"><i class='bx bx-trash'></i> Delete Chat</button>
+            </div>
+          </div>
+        </header>
+
+        <div id="disappearing-banner" class="hidden" style="background: rgba(16, 185, 129, 0.1); color: #10b981; text-align: center; font-size: 0.75rem; padding: 4px; font-weight: bold;">
+           <i class='bx bx-timer'></i> Disappearing Messages on (24h)
+        </div>
+
+        <!-- Pinned Message Banner -->
+        <div id="pinned-message-banner" class="hidden pinned-banner">
+          <i class='bx bxs-pin pinned-banner-icon'></i>
+          <div class="pinned-banner-content">
+            <span class="pinned-banner-label">Pinned Message</span>
+            <span id="pinned-banner-text" class="pinned-banner-text">...</span>
+          </div>
+          <button id="btn-unpin-msg" class="pinned-banner-unpin" title="Unpin">
+            <i class='bx bx-x'></i>
+          </button>
+        </div>
+
+        <!-- Messages Area -->
+        <main id="chat-messages" class="messages-container">
+          <!-- Messages will be injected here via JS -->
+        </main>
+
+        <!-- Input Area -->
+        <div id="reply-preview-container" class="hidden" style="background: rgba(0,0,0,0.5); padding: 8px 15px; border-left: 4px solid #10b981; display: flex; justify-content: space-between; align-items: center; z-index: 10;">
+             <div style="flex: 1; overflow: hidden;">
+                 <div id="reply-preview-name" style="font-size: 0.8rem; font-weight: bold; color: #10b981;">Name</div>
+                 <div id="reply-preview-text" style="font-size: 0.85rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Text</div>
+             </div>
+             <button id="btn-cancel-reply" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;"><i class='bx bx-x'></i></button>
+        </div>
+        <footer id="chat-input-footer" class="chat-input-area" style="gap: 8px;">
+          <label for="input-photo" class="icon-button" title="Gallery" style="margin-right: 0;">
+            <i class='bx bx-image-add'></i>
+          </label>
+          <input type="file" id="input-photo" accept="image/*" hidden />
+          
+          <label for="input-camera" class="icon-button" title="Live Selfie" style="color: #10b981; margin-right: 0; padding: 0;">
+             <i class='bx bx-camera'></i>
+          </label>
+          <input type="file" id="input-camera" accept="image/*" capture="user" hidden />
+          
+          <div class="input-wrapper">
+            <input type="text" id="input-message" placeholder="Message" autocomplete="off" />
+          </div>
+          
+          <button id="btn-voice" class="icon-button voice-button" title="Hold to Record">
+            <i class='bx bx-microphone'></i>
+          </button>
+          
+          <button id="btn-send" class="icon-button send-button hidden" title="Send Message">
+            <i class='bx bxs-send'></i>
+          </button>
+        </footer>
+
+        <div id="blocked-banner" class="hidden" style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); padding: 15px; text-align: center; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(255,255,255,0.05); z-index: 10;">
+           You have blocked this contact. <span id="btn-unblock-banner" style="color: #6366f1; cursor: pointer; font-weight: bold;">Tap to unblock.</span>
+        </div>
+        
+        <!-- WhatsApp-Style Voice Recording UI -->
+        <!-- Hold UI: shown while finger is held on mic -->
+        <div id="voice-record-bar" class="voice-record-bar hidden">
+          <!-- Lock indicator: slides up when user drags up -->
+          <div id="voice-lock-hint" class="voice-lock-hint">
+            <div id="voice-lock-arrow" class="voice-lock-arrow">
+              <i class='bx bx-chevron-up'></i>
+              <i class='bx bx-lock-alt'></i>
+            </div>
+          </div>
+          <!-- Main recording bar replacing input area -->
+          <div class="voice-record-inner">
+            <div class="voice-mic-pulse">
+              <i class='bx bxs-microphone'></i>
+            </div>
+            <span id="voice-record-time" class="voice-record-time">0:00</span>
+            <div class="voice-waveform" id="voice-waveform">
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div id="voice-cancel-hint" class="voice-cancel-hint">
+              <i class='bx bx-chevron-left'></i>
+              <span>Slide to cancel</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Locked Recording Bar: shown after user locks (slides up) -->
+        <div id="voice-locked-bar" class="voice-locked-bar hidden">
+          <button id="btn-voice-cancel" class="voice-action-btn voice-btn-cancel" title="Cancel">
+            <i class='bx bx-trash'></i>
+          </button>
+          <div class="voice-locked-center">
+            <div class="voice-locked-mic">
+              <i class='bx bxs-microphone'></i>
+            </div>
+            <div class="voice-waveform voice-waveform-locked">
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <span id="voice-locked-time" class="voice-record-time">0:00</span>
+          </div>
+          <button id="btn-voice-send" class="voice-action-btn voice-btn-send" title="Send">
+            <i class='bx bxs-send'></i>
+          </button>
+        </div>
+        
+        <!-- Image Sending Overlay -->
+        <div id="image-sending-overlay" class="hidden">
+           <div class="sending-preview-container">
+              <img id="image-sending-preview" src="" alt="Sending Preview" />
+              <div class="sending-spinner"></div>
+           </div>
+           <p class="sending-text">Sending Photo...</p>
+        </div>
+      </div>
+
+      <!-- Action Modal -->
+      <div id="action-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+          <h3 id="modal-title">Delete Chat?</h3>
+          <p id="modal-desc" style="font-size: 0.9rem; color: #94a3b8; margin: 10px 0 20px;">Choose how you want to proceed.</p>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+             <button id="btn-modal-me" class="cta-button" style="background: #334155; padding: 12px; border-radius: 8px;">Delete for Me</button>
+             <button id="btn-modal-everyone" class="cta-button" style="background: #ef4444; padding: 12px; border-radius: 8px;">Delete for Everyone</button>
+             <button id="btn-modal-cancel" class="cta-button" style="background: transparent; border: 1px solid #334155; padding: 12px; border-radius: 8px; margin-top: 5px;">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Profile Screen (full-screen, WhatsApp-style) -->
+      <div id="contact-profile-screen" class="contact-profile-screen hidden">
+
+        <!-- Blurred backdrop header -->
+        <div class="cp-header-bg">
+          <img id="cp-bg-img" src="" alt="" class="cp-bg-blur" />
+          <div class="cp-header-overlay"></div>
+
+          <!-- Back button -->
+          <button id="btn-close-contact-profile" class="cp-back-btn">
+            <i class='bx bx-arrow-back'></i>
+          </button>
+
+          <!-- Tappable Avatar -->
+          <div class="cp-avatar-wrap" id="cp-avatar-wrap">
+            <img id="cp-avatar" src="" alt="Profile Picture" class="cp-avatar" />
+            <div class="cp-avatar-tap-hint">
+              <i class='bx bx-expand-alt'></i>
+            </div>
+          </div>
+
+          <!-- Name + last seen -->
+          <div class="cp-header-info">
+            <h2 id="cp-name" class="cp-name">Name</h2>
+            <span id="cp-status-badge" class="cp-status-badge">
+              <span class="cp-status-dot" id="cp-status-dot"></span>
+              <span id="cp-status-text">Offline</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Scrollable body -->
+        <div class="cp-body">
+
+          <!-- Quick actions row -->
+          <div class="cp-actions-row">
+            <button class="cp-action-btn" id="cp-btn-message" title="Message">
+              <div class="cp-action-icon"><i class='bx bxs-message-rounded-dots'></i></div>
+              <span>Message</span>
+            </button>
+            <button class="cp-action-btn" id="cp-btn-audio" title="Voice Call">
+              <div class="cp-action-icon"><i class='bx bx-phone'></i></div>
+              <span>Audio</span>
+            </button>
+            <button class="cp-action-btn" id="cp-btn-video" title="Video Call">
+              <div class="cp-action-icon"><i class='bx bx-video'></i></div>
+              <span>Video</span>
+            </button>
+            <button class="cp-action-btn" id="cp-btn-search-chat" title="Search in chat">
+              <div class="cp-action-icon"><i class='bx bx-search'></i></div>
+              <span>Search</span>
+            </button>
+          </div>
+
+          <!-- Bio / About card -->
+          <div class="cp-info-card" id="cp-bio-card">
+            <div class="cp-info-icon"><i class='bx bx-info-circle'></i></div>
+            <div class="cp-info-content">
+              <p id="cp-bio" class="cp-info-value">Hey there! I am using Chatify.</p>
+              <span class="cp-info-label">Bio</span>
+            </div>
+          </div>
+
+          <!-- Phone card -->
+          <div class="cp-info-card">
+            <div class="cp-info-icon"><i class='bx bx-phone'></i></div>
+            <div class="cp-info-content">
+              <p id="cp-phone" class="cp-info-value">+0000000000</p>
+              <span class="cp-info-label">Phone</span>
+            </div>
+          </div>
+
+          <!-- Email card (Google account) -->
+          <div class="cp-info-card" id="cp-email-card">
+            <div class="cp-info-icon"><i class='bx bxl-google'></i></div>
+            <div class="cp-info-content">
+              <p id="cp-email" class="cp-info-value">–</p>
+              <span class="cp-info-label">Google Account</span>
+            </div>
+          </div>
+
+          <!-- Divider label -->
+          <div class="cp-section-label">Actions</div>
+
+          <!-- Block / Mute -->
+          <button class="cp-danger-row" id="cp-btn-block">
+            <i class='bx bx-block'></i>
+            <span id="cp-block-label">Block Contact</span>
+          </button>
+
+          <button class="cp-danger-row cp-mute-row" id="cp-btn-mute" style="display:none;">
+            <i class='bx bx-bell-off'></i>
+            <span>Mute Notifications</span>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Prompt Modal -->
+      <div id="prompt-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+          <h3 id="prompt-title">Edit Name</h3>
+          <p id="prompt-desc" style="font-size: 0.9rem; color: #94a3b8; margin: 10px 0;">Enter a new alias for this contact.</p>
+          <div class="input-wrapper" style="margin: 20px 0; background: #0f172a;">
+            <input type="text" id="prompt-input" autocomplete="off" style="width:100%; border:none; background:transparent; color:white; outline:none; font-size: 1rem;" />
+          </div>
+          <div style="display: flex; gap: 10px;">
+             <button id="btn-prompt-cancel" class="cta-button" style="background: transparent; border: 1px solid #334155; padding: 10px; border-radius: 8px; flex: 1;">Cancel</button>
+             <button id="btn-prompt-save" class="cta-button" style="background: #10b981; padding: 10px; border-radius: 8px; flex: 1;">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Profile Modal -->
+      <div id="edit-profile-modal" class="modal-overlay hidden">
+        <div class="modal-box edit-profile-modal-box">
+          <div class="edit-profile-header">
+            <h3>Edit Profile</h3>
+            <button id="btn-close-edit-profile" class="icon-button" style="background: transparent;"><i class='bx bx-x'></i></button>
+          </div>
+
+          <div class="edit-field-group">
+            <label class="edit-field-label"><i class='bx bx-user'></i> Display Name</label>
+            <div class="input-wrapper">
+              <input type="text" id="edit-profile-name" placeholder="Your display name" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="edit-field-group">
+            <label class="edit-field-label"><i class='bx bx-phone'></i> Phone Number</label>
+            <div class="input-wrapper">
+              <input type="tel" id="edit-profile-phone" placeholder="e.g. +1234567890" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="edit-field-group">
+            <label class="edit-field-label"><i class='bx bx-info-circle'></i> Bio / Status</label>
+            <div class="input-wrapper">
+              <input type="text" id="edit-profile-bio" placeholder="Hey there! I am using Chatify." maxlength="100" autocomplete="off" />
+            </div>
+            <span class="edit-char-count"><span id="edit-bio-count">0</span>/100</span>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button id="btn-edit-profile-cancel" class="cta-button" style="background: transparent; border: 1px solid #334155; flex: 1;">Cancel</button>
+            <button id="btn-edit-profile-save" class="cta-button" style="background: #6366f1; flex: 1;">
+              <i class='bx bx-check'></i> Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Account Confirmation Modal -->
+      <div id="delete-account-modal" class="modal-overlay hidden">
+        <div class="modal-box" style="text-align: center;">
+          <div style="width: 64px; height: 64px; background: rgba(239,68,68,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            <i class='bx bx-trash' style="font-size: 2rem; color: #ef4444;"></i>
+          </div>
+          <h3 style="font-size: 1.2rem; margin-bottom: 8px;">Delete Account?</h3>
+          <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 20px; line-height: 1.5;">This will <strong style="color:#ef4444;">permanently delete</strong> your account, profile data, and all conversations. You will need to re-authenticate with Google to confirm.<br><br>This action <strong>cannot</strong> be undone.</p>
+          <div style="display: flex; gap: 10px;">
+            <button id="btn-delete-account-cancel" class="cta-button" style="background: transparent; border: 1px solid #334155; flex: 1;">Cancel</button>
+            <button id="btn-delete-account-confirm" class="cta-button" style="background: #ef4444; flex: 1;">
+              <i class='bx bx-trash'></i> Yes, Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message Action Bottom Sheet -->
+      <div id="msg-action-menu" class="modal-overlay hidden" style="align-items: flex-end; padding-bottom: 20px;">
+        <div class="modal-box" style="margin-bottom: 0; border-radius: 16px; width: 90%; max-width: 400px; padding: 15px; overflow: hidden; background: #1e293b;">
+           
+           <!-- Emoji Reaction Bar -->
+           <div id="emoji-reaction-bar" style="display: flex; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 99px; margin-bottom: 15px;">
+              <button class="emoji-btn">👍</button>
+              <button class="emoji-btn">❤️</button>
+              <button class="emoji-btn">😂</button>
+              <button class="emoji-btn">😮</button>
+              <button class="emoji-btn">😢</button>
+              <button class="emoji-btn">🙏</button>
+           </div>
+
+           <div style="display: flex; flex-direction: column; width: 100%;">
+              <button id="btn-msg-reply" class="whatsapp-action-btn"><i class='bx bx-reply'></i> Reply</button>
+              <button id="btn-msg-pin" class="whatsapp-action-btn"><i class='bx bxs-pin'></i> Pin Message</button>
+              <button id="btn-msg-edit" class="whatsapp-action-btn hidden"><i class='bx bx-pencil'></i> Edit</button>
+              <button id="btn-msg-copy" class="whatsapp-action-btn hidden"><i class='bx bx-copy'></i> Copy</button>
+              <button id="btn-msg-forward" class="whatsapp-action-btn"><i class='bx bx-share-alt'></i> Forward</button>
+              <button id="btn-msg-download" class="whatsapp-action-btn hidden"><i class='bx bx-download'></i> Save</button>
+              <button id="btn-msg-delete-for-me" class="whatsapp-action-btn danger hidden"><i class='bx bx-trash'></i> Delete for Me</button>
+              <button id="btn-msg-delete" class="whatsapp-action-btn danger"><i class='bx bx-trash'></i> Delete Message</button>
+           </div>
+        </div>
+      </div>
+
+      <!-- Forward Modal -->
+      <div id="forward-modal" class="modal-overlay hidden">
+        <div class="modal-box" style="height: 80vh; display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+             <h3 style="font-size: 1.1rem;">Forward to...</h3>
+             <button id="btn-close-forward" style="background:transparent; border:none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;"><i class='bx bx-x'></i></button>
+          </div>
+          <div id="forward-list" class="recent-chats-container" style="flex: 1; overflow-y: auto;">
+             <!-- Renders recent chats & contacts -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast Notification -->
+      <div id="toast-notification" class="hidden" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 8px 20px; border-radius: 99px; font-size: 0.9rem; font-weight: bold; z-index: 9999; box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4); transition: opacity 0.3s ease;">
+         Forwarded!
+      </div>
+      
+      <!-- Incoming Call Modal -->
+      <div id="incoming-call-modal" class="modal-overlay hidden" style="z-index: 9999; background: rgba(15, 23, 42, 0.95);">
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; color: white;">
+           <img id="incoming-call-avatar" src="" alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 20px; border: 4px solid #10b981;" />
+           <h2 id="incoming-call-name" style="margin: 0; font-size: 1.8rem;">Name</h2>
+           <p id="incoming-call-type" style="color: #94a3b8; font-size: 1rem; margin-top: 5px;">Incoming Video Call...</p>
+           
+           <div style="display: flex; gap: 30px; margin-top: 50px;">
+              <button id="btn-decline-call" style="width: 70px; height: 70px; border-radius: 50%; border: none; background: #ef4444; color: white; font-size: 2rem; cursor: pointer; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center;"><i class='bx bx-phone-off'></i></button>
+              <button id="btn-accept-call" class="pulse-animation" style="width: 70px; height: 70px; border-radius: 50%; border: none; background: #10b981; color: white; font-size: 2rem; cursor: pointer; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center;"><i class='bx bx-phone'></i></button>
+           </div>
+        </div>
+      </div>
+
+      <!-- Active WebRTC Call Screen -->
+      <div id="active-call-screen" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9998; display: flex; flex-direction: column; overflow: hidden;">
+         
+         <!-- Remote Video Flow (Full Screen) -->
+         <div style="position: relative; flex: 1; width: 100%; background: #1e293b; display: flex; align-items: center; justify-content: center;">
+             <video id="remoteVideo" class="video-full" autoplay playsinline></video>
+             
+             <!-- Audio Call Avatar Overlay -->
+             <div id="audio-call-avatar-container" class="hidden" style="position: absolute; inset: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 1;">
+                 <img id="active-call-avatar" src="" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.5);" />
+             </div>
+             
+             <!-- Local Video Flow (Draggable/Floating box) -->
+             <video id="localVideo" class="video-pip" autoplay playsinline muted></video>
+             
+             <!-- Header Overlay -->
+             <div style="position: absolute; top: calc(20px + env(safe-area-inset-top, 20px)); left: 20px; z-index: 2; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                 <h2 id="active-call-name" style="color: white; margin: 0; font-size: 1.2rem;">Name</h2>
+                 <p id="active-call-duration" style="color: #10b981; margin: 0; font-size: 0.9rem;">Connecting...</p>
+             </div>
+             
+             <!-- Minimize Button -->
+             <button id="btn-call-minimize" style="position: absolute; top: calc(20px + env(safe-area-inset-top, 20px)); right: 20px; z-index: 3; background: rgba(0,0,0,0.5); border: none; color: white; border-radius: 8px; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; backdrop-filter: blur(5px);">
+                <i class='bx bx-collapse'></i>
+             </button>
+         </div>
+         
+         <!-- Call Controls Panel -->
+         <div style="height: 100px; background: rgba(15, 23, 42, 0.9); display: flex; justify-content: space-evenly; align-items: center; padding: 0 20px;">
+             <button id="btn-call-mute" class="call-control-btn"><i class='bx bx-microphone'></i></button>
+             <button id="btn-call-video" class="call-control-btn"><i class='bx bx-video'></i></button>
+             <button id="btn-call-swap-cam" class="call-control-btn hidden"><i class='bx bx-camera'></i></button>
+             <button id="btn-call-end" class="call-control-btn" style="background: #ef4444; color: white; border: none;"><i class='bx bx-phone-off'></i></button>
+         </div>
+         </div>
+      </div>
+      
+      <!-- Active Group Call WebRTC Screen -->
+      <div id="active-group-call-screen" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9998; display: flex; flex-direction: column; overflow: hidden;">
+         
+         <!-- Group Video Grid -->
+         <div id="group-call-grid" style="flex: 1; display: grid; gap: 2px; background: #0f172a; padding-bottom: 20px;">
+             <!-- Inject local video wrapper manually inside the JS logic, or predefined here -->
+             <div class="grid-video-wrapper local-grid-box" id="local-video-wrapper" style="position: relative; width: 100%; height: 100%; background: #1e293b; overflow: hidden;">
+                 <video id="local-group-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                 <span style="position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">You</span>
+             </div>
+         </div>
+         
+         <div style="position: absolute; top: calc(20px + env(safe-area-inset-top, 20px)); left: 20px; z-index: 5; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+             <h2 id="active-group-call-name" style="color: white; margin: 0; font-size: 1.2rem;">Group Call</h2>
+             <p id="active-group-duration" style="color: #10b981; margin: 0; font-size: 0.9rem;">Connecting...</p>
+         </div>
+         
+         <!-- Call Controls Panel (Group) -->
+         <div style="height: 100px; background: rgba(15, 23, 42, 0.9); display: flex; justify-content: space-evenly; align-items: center; padding: 0 20px; z-index: 5;">
+             <button id="btn-group-mute" class="call-control-btn"><i class='bx bx-microphone'></i></button>
+             <button id="btn-group-video" class="call-control-btn"><i class='bx bx-video'></i></button>
+             <button id="btn-group-add" class="call-control-btn" style="background: rgba(255,255,255,0.2);"><i class='bx bx-user-plus'></i></button>
+             <button id="btn-group-end" class="call-control-btn" style="background: #ef4444; color: white; border: none;"><i class='bx bx-phone-off'></i></button>
+         </div>
+      </div>
+      
+      <!-- Upgrade to Video Request Modal -->
+      <div id="video-upgrade-modal" class="modal-overlay hidden" style="z-index: 9999;">
+        <div class="modal-box" style="text-align: center;">
+          <h3 style="margin-bottom: 10px;">Switch to Video?</h3>
+          <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 25px;">The other user is requesting to upgrade this call to a Video Call.</p>
+          <div style="display: flex; gap: 10px;">
+             <button id="btn-reject-upgrade" class="cta-button" style="background: #334155; flex: 1;">Cancel</button>
+             <button id="btn-accept-upgrade" class="cta-button" style="background: #10b981; flex: 1;">Accept</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Image Lightbox Container -->
+      <div id="image-lightbox" class="modal-overlay hidden">
+         <button class="lightbox-close"><i class='bx bx-x'></i></button>
+         <img id="lightbox-image" src="" alt="Full Screen View" />
+         <a id="lightbox-download-link" href="" download class="lightbox-download">
+            <i class='bx bx-download'></i> Download Image
+         </a>
+      </div>
+      
+    </div>
+    
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
