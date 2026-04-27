@@ -43,6 +43,43 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ── iOS Audio Unlock ────────────────────────────────────────────────────────
+// iOS blocks ALL audio until a user gesture happens (tap, click, touchstart).
+// We create a silent AudioContext and resume it on the first interaction so
+// that the ringtone audio element can play when an incoming call arrives.
+(function unlockIOSAudio() {
+  let unlocked = false;
+  const unlock = () => {
+    if (unlocked) return;
+    // Resume AudioContext (required unlock gesture on iOS)
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    ctx.resume().then(() => {
+      unlocked = true;
+      // Also warm up the ringtone element so it can autoplay later
+      const ringtone = document.getElementById('ringtone-audio');
+      if (ringtone) {
+        ringtone.volume = 0;
+        ringtone.play().then(() => {
+          ringtone.pause();
+          ringtone.currentTime = 0;
+          ringtone.volume = 1;
+        }).catch(() => {});
+      }
+      document.removeEventListener('touchstart', unlock, true);
+      document.removeEventListener('touchend', unlock, true);
+      document.removeEventListener('click', unlock, true);
+    });
+  };
+  document.addEventListener('touchstart', unlock, { once: false, capture: true, passive: true });
+  document.addEventListener('touchend',   unlock, { once: false, capture: true, passive: true });
+  document.addEventListener('click',      unlock, { once: false, capture: true, passive: true });
+})();
+
 // Screens
 const loadingScreen = document.getElementById('loading-screen');
 const loginScreen = document.getElementById('login-screen');
@@ -1278,7 +1315,17 @@ function initApp() {
   setupAuth(async (user) => {
     if (user) {
       try {
-        const profile = await getUserProfile(user.uid);
+        // ── Retry loop: Firestore may not be immediately ready after sign-in ──
+        // Without this, a slow network causes getUserProfile to return null
+        // and routes a registered user to the profile setup screen incorrectly.
+        let profile = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          profile = await getUserProfile(user.uid);
+          if (profile) break; // Got it — stop retrying
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // 1s, 2s backoff
+          }
+        }
         
         if (profile && profile.phoneNumber) {
           myProfileData = profile;
@@ -1357,7 +1404,18 @@ function initApp() {
               }
           });
         } else {
-          // No phone number found - show profile setup
+          // Profile doc doesn't exist OR has no phoneNumber.
+          // This is a genuinely new user — show the profile setup screen.
+          // Pre-fill name from Google account so they don't have to retype it.
+          const setupNameHint = document.getElementById('profile-setup-name-hint');
+          if (setupNameHint && user.displayName) {
+            setupNameHint.textContent = `Welcome, ${user.displayName.split(' ')[0]}! `;
+          }
+          // Pre-fill the avatar from Google photo if available
+          const setupAvatar = document.getElementById('profile-setup-avatar');
+          if (setupAvatar && user.photoURL) {
+            setupAvatar.src = user.photoURL;
+          }
           switchScreen(profileScreen);
         }
       } catch (err) {

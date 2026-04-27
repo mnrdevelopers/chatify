@@ -9,6 +9,14 @@
   
   --text-main: #f8fafc;
   --text-muted: #cbd5e1;
+
+  /* ── iOS Safe Area insets ─────────────────────────────────────────────
+     These resolve to 0px on non-iOS and to the actual notch/home-
+     indicator size on iPhone. Use these everywhere layout touches edges. */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
 }
 
 * {
@@ -227,6 +235,164 @@ body {
   color: var(--text-muted);
   margin-bottom: 2.5rem;
   font-size: 0.95rem;
+}
+
+/* ── Auth Card (extended login-card) ─────────────────────────────── */
+.auth-card {
+  padding: 2rem 1.75rem 2rem;
+  width: 100%;
+  max-width: 380px;
+  overflow-y: auto;
+  max-height: calc(100vh - 3rem);
+}
+.auth-card h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+/* ── Auth Tabs ───────────────────────────────────────────────────── */
+.auth-tabs {
+  display: flex;
+  background: rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 1.2rem;
+  gap: 4px;
+}
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 8px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.auth-tab.active {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+/* ── Auth Panels ─────────────────────────────────────────────────── */
+.auth-panel {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn 0.3s ease;
+}
+.auth-panel.active {
+  display: flex;
+}
+
+/* ── Auth Inputs with icon ───────────────────────────────────────── */
+.auth-input {
+  border-radius: 12px;
+  padding: 0 14px;
+  height: 48px;
+  gap: 10px;
+  flex: unset; /* override chat input wrapper flex:1 */
+}
+.auth-input input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 0.95rem;
+}
+.auth-input input::placeholder { color: #64748b; }
+.auth-icon {
+  font-size: 1.15rem;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+/* Password show/hide toggle */
+.pwd-toggle {
+  position: absolute;
+  right: 14px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 1.15rem;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+.pwd-toggle:hover { color: #fff; }
+
+/* ── Forgot password / link button ──────────────────────────────── */
+.link-btn {
+  background: transparent;
+  border: none;
+  color: var(--secondary-accent);
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 500;
+  text-decoration: underline;
+}
+.link-btn:hover { color: #fff; }
+
+/* ── Divider ─────────────────────────────────────────────────────── */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #475569;
+  font-size: 0.8rem;
+  margin: 2px 0;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+}
+
+/* ── Google Button ───────────────────────────────────────────────── */
+.google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  padding: 11px 16px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.google-btn:hover {
+  background: rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Make main cta-button look better in auth card */
+.auth-card .cta-button {
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+}
+.auth-card .cta-button:hover {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(99,102,241,0.5);
 }
 
 .cta-button {
@@ -2528,3 +2694,87 @@ body {
 
 /* When timer is running, #active-call-duration shows plain text like "1:23" */
 /* It inherits color: #10b981 from the inline style in index.html */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   iOS PWA FIXES
+   All fixes use var(--sat/--sab) defined in :root.
+   These resolve to 0 on non-iOS and to the actual safe-area on iPhone.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Prevent iOS from scaling text in landscape */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* 2. Remove iOS tap highlight flash on all interactive elements */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* 3. Chat Header — clear the notch / Dynamic Island */
+.chat-header {
+  padding-top: calc(1rem + var(--sat));
+}
+
+/* 4. Bottom Nav — clear the home indicator bar */
+.bottom-nav {
+  padding-bottom: calc(0.5rem + var(--sab));
+  height: calc(60px + var(--sab));
+}
+
+/* 5. Chat Input Footer — clear home indicator */
+.chat-input-area {
+  padding-bottom: calc(0.75rem + var(--sab));
+}
+
+/* 6. All full-screen modal overlays — start below notch */
+.modal-overlay {
+  padding-top: var(--sat);
+}
+
+/* 7. Voice Recording Bars — above home indicator */
+.voice-record-bar,
+.voice-locked-bar {
+  padding-bottom: calc(8px + var(--sab)) !important;
+}
+
+/* 8. PiP bubble — above home indicator */
+#pip-call-bubble {
+  bottom: calc(80px + var(--sab)) !important;
+}
+
+/* 9. iOS momentum scrolling for all scroll containers */
+.messages-container,
+.recent-chats-container,
+.cp-body,
+#forward-list,
+#calls-list {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* 10. Fix iOS WebKit backdrop-filter on glass elements */
+.glass-dropdown,
+.modal-box,
+.voice-record-bar,
+.voice-locked-bar {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* 11. Loading screen: clear notch on first launch */
+#loading-screen {
+  padding-top: var(--sat);
+}
+
+/* 12. Standalone PWA mode specific fixes */
+@media all and (display-mode: standalone) {
+  body {
+    overscroll-behavior: none;
+    position: fixed;
+    width: 100%;
+  }
+  #app-container {
+    /* dvh = dynamic viewport height; avoids iOS Safari chrome gap */
+    height: 100dvh;
+  }
+  .bottom-nav {
+    padding-bottom: calc(8px + var(--sab));
+  }
+}

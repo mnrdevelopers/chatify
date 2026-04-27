@@ -5,14 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Chatify - Premium Messaging</title>
     
-    <!-- PWA Setup -->
+    <!-- ── Core PWA & iOS Meta Tags ─────────────────────────────────────── -->
     <meta name="theme-color" content="#0f172a" />
-    <link rel="manifest" href="./manifest.json" />
-    <link rel="icon" type="image/png" href="./favicon.png" />
-    <link rel="apple-touch-icon" href="./favicon.png" />
     <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- iOS Home Screen setup -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Chatify" />
+    <!-- black-translucent = status bar overlaps app (we handle with safe-area CSS) -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json" />
+
+    <!-- App Icons -->
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <!-- iOS requires apple-touch-icon for the Home Screen icon -->
+    <link rel="apple-touch-icon" href="./favicon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="./favicon.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="./favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./favicon.png" />
+
+    <!-- iOS Splash Screens (prevents white flash on launch) -->
+    <!-- iPhone 14 Pro Max -->
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" href="./favicon.png" />
+    <!-- iPhone 14 Pro / 15 -->
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" href="./favicon.png" />
+    <!-- iPhone 14 / 13 -->
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="./favicon.png" />
+    <!-- iPhone SE (3rd gen) -->
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="./favicon.png" />
+    <!-- iPad Pro 12.9" -->
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" href="./favicon.png" />
 
     <!-- Google Fonts for Modern Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -43,22 +67,101 @@
 
       <!-- Login Screen -->
       <div id="login-screen" class="screen hidden">
-        <div class="login-card">
+        <div class="login-card auth-card">
+
+          <!-- Logo & App Name -->
           <div class="logo-container">
             <i class='bx bxs-chat bx-tada'></i>
           </div>
-          <h1>Welcome to Chatify</h1>
-          <p>Connect instantly with premium messaging.</p>
-          <button id="btn-login" class="cta-button">
-            <i class='bx bxl-google'></i> Sign in with Google
-          </button>
+          <h1>Chatify</h1>
+
+          <!-- Auth Tabs -->
+          <div class="auth-tabs" id="auth-tabs">
+            <button class="auth-tab active" data-tab="login" id="tab-btn-login">Sign In</button>
+            <button class="auth-tab" data-tab="register" id="tab-btn-register">Register</button>
+          </div>
+
+          <!-- Global error/success message -->
+          <p id="auth-error-msg" style="display:none; font-size:0.85rem; margin: 0 0 10px; text-align:center;"></p>
+
+          <!-- ── Login Panel ─────────────────────────────────── -->
+          <div class="auth-panel active" id="auth-panel-login">
+
+            <div class="input-wrapper auth-input">
+              <i class='bx bx-envelope auth-icon'></i>
+              <input type="email" id="auth-email" placeholder="Email address" autocomplete="email" />
+            </div>
+
+            <div class="input-wrapper auth-input" style="position:relative;">
+              <i class='bx bx-lock-alt auth-icon'></i>
+              <input type="password" id="auth-password" placeholder="Password" autocomplete="current-password" />
+              <button type="button" class="pwd-toggle" id="toggle-login-pwd" title="Show/Hide password">
+                <i class='bx bx-show'></i>
+              </button>
+            </div>
+
+            <div style="text-align:right; margin: -6px 0 10px;">
+              <button type="button" id="btn-forgot-password" class="link-btn">Forgot password?</button>
+            </div>
+
+            <button id="btn-login-email" class="cta-button">
+              <i class='bx bx-log-in'></i> Sign In
+            </button>
+
+            <div class="auth-divider"><span>or</span></div>
+
+            <button id="btn-login-google" class="google-btn">
+              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+              Continue with Google
+            </button>
+          </div>
+
+          <!-- ── Register Panel ───────────────────────────────── -->
+          <div class="auth-panel" id="auth-panel-register">
+
+            <div class="input-wrapper auth-input">
+              <i class='bx bx-user auth-icon'></i>
+              <input type="text" id="reg-name" placeholder="Display name" autocomplete="name" />
+            </div>
+
+            <div class="input-wrapper auth-input">
+              <i class='bx bx-envelope auth-icon'></i>
+              <input type="email" id="reg-email" placeholder="Email address" autocomplete="email" />
+            </div>
+
+            <div class="input-wrapper auth-input" style="position:relative;">
+              <i class='bx bx-lock-alt auth-icon'></i>
+              <input type="password" id="reg-password" placeholder="Password (min. 6 chars)" autocomplete="new-password" />
+              <button type="button" class="pwd-toggle" id="toggle-reg-pwd" title="Show/Hide password">
+                <i class='bx bx-show'></i>
+              </button>
+            </div>
+
+            <div class="input-wrapper auth-input">
+              <i class='bx bx-lock-open-alt auth-icon'></i>
+              <input type="password" id="reg-confirm" placeholder="Confirm password" autocomplete="new-password" />
+            </div>
+
+            <button id="btn-register" class="cta-button" style="margin-top:6px;">
+              <i class='bx bx-user-plus'></i> Create Account
+            </button>
+
+            <div class="auth-divider"><span>or</span></div>
+
+            <button id="btn-login-google-reg" class="google-btn">
+              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+              Continue with Google
+            </button>
+          </div>
+
         </div>
       </div>
 
       <!-- Profile Completion Screen -->
       <div id="profile-screen" class="screen hidden">
         <div class="login-card" style="text-align: center;">
-          <h2>Complete Your Profile</h2>
+          <h2>One Last Step</h2>
+          <p id="profile-setup-name-hint" style="color: #10b981; font-size: 0.95rem; font-weight: 600; margin: 4px 0 0;"></p>
           
           <div class="avatar-upload-container" style="position: relative; width: 100px; height: 100px; margin: 20px auto;">
             <img id="profile-setup-avatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%23ffffff' xmlns='http://www.w3.org/2000/svg' style='background:%2394a3b8'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #6366f1; cursor: pointer;" title="Upload Display Picture" />
@@ -71,11 +174,11 @@
             </div>
           </div>
           
-          <p>Enter your mobile number so friends can find you.</p>
+          <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0;">Add your phone number so friends can find you.</p>
           <div class="input-wrapper" style="margin: 20px 0;">
-            <input type="tel" id="input-my-phone" placeholder="e.g. +1234567890" autocomplete="off" />
+            <input type="tel" id="input-my-phone" placeholder="e.g. +1234567890" autocomplete="tel" />
           </div>
-          <button id="btn-save-profile" class="cta-button">Save Profile</button>
+          <button id="btn-save-profile" class="cta-button">Continue →</button>
         </div>
       </div>
 
@@ -741,5 +844,107 @@
     </div>
     
     <script type="module" src="./src/main.js"></script>
+
+    <!-- ── iOS "Add to Home Screen" Install Banner ────────────────────────── -->
+    <!-- Shown only on iOS Safari when app is NOT already installed as PWA.   -->
+    <!-- Push notifications on iOS work ONLY when added to Home Screen.       -->
+    <div id="ios-install-banner" style="
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(15, 23, 42, 0.97);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 14px 18px calc(14px + env(safe-area-inset-bottom)) 18px;
+      z-index: 99999;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      animation: slideUpFade 0.4s ease;
+    ">
+      <button onclick="document.getElementById('ios-install-banner').style.display='none'" style="
+        position: absolute; top: 10px; right: 14px;
+        background: transparent; border: none; color: #94a3b8;
+        font-size: 1.4rem; cursor: pointer; line-height: 1;
+      ">✕</button>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <img src="./favicon.png" style="width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;" />
+        <div>
+          <div style="font-weight: 700; font-size: 1rem; margin-bottom: 2px;">Install Chatify</div>
+          <div style="font-size: 0.82rem; color: #94a3b8; line-height: 1.4;">
+            To receive call &amp; message notifications on iPhone, tap
+            <span style="display:inline-flex;align-items:center;gap:3px;color:#3b82f6;font-weight:600;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l-3 9H2l7.5 5.5L7 24l5-3.5L17 24l-2.5-7.5L22 11h-7z"/></svg>
+              Share
+            </span>
+            then <strong style="color:white;">"Add to Home Screen"</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Show iOS install banner only on iOS Safari, not already-installed PWA
+      (function() {
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isInStandaloneMode = window.navigator.standalone === true;
+        const dismissed = sessionStorage.getItem('ios-banner-dismissed');
+        if (isIOS && !isInStandaloneMode && !dismissed) {
+          setTimeout(() => {
+            const banner = document.getElementById('ios-install-banner');
+            if (banner) banner.style.display = 'block';
+          }, 3000);
+          document.getElementById('ios-install-banner')
+            .querySelector('button')
+            .addEventListener('click', () => sessionStorage.setItem('ios-banner-dismissed', '1'));
+        }
+      })();
+
+      // ── Auth Tab Switching ────────────────────────────────────────────────
+      (function() {
+        const tabs    = document.querySelectorAll('.auth-tab');
+        const panels  = document.querySelectorAll('.auth-panel');
+        const errEl   = document.getElementById('auth-error-msg');
+        tabs.forEach(tab => {
+          tab.addEventListener('click', () => {
+            const target = tab.dataset.tab;
+            tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === target));
+            panels.forEach(p => {
+              const id = p.id; // 'auth-panel-login' or 'auth-panel-register'
+              p.classList.toggle('active', id === 'auth-panel-' + target);
+            });
+            // Clear error when switching tabs
+            if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+          });
+        });
+      })();
+
+      // ── Password Show/Hide Toggles ────────────────────────────────────────
+      (function() {
+        function makeToggle(btnId, inputId) {
+          const btn = document.getElementById(btnId);
+          const inp = document.getElementById(inputId);
+          if (!btn || !inp) return;
+          btn.addEventListener('click', () => {
+            const showing = inp.type === 'text';
+            inp.type = showing ? 'password' : 'text';
+            btn.querySelector('i').className = showing ? 'bx bx-show' : 'bx bx-hide';
+          });
+        }
+        makeToggle('toggle-login-pwd', 'auth-password');
+        makeToggle('toggle-reg-pwd',   'reg-password');
+      })();
+
+      // ── Google button in Register tab mirrors Sign-In tab ─────────────────
+      (function() {
+        const regGoogle = document.getElementById('btn-login-google-reg');
+        if (regGoogle) {
+          regGoogle.addEventListener('click', () => {
+            const loginGoogle = document.getElementById('btn-login-google');
+            if (loginGoogle) loginGoogle.click();
+          });
+        }
+      })();
+    </script>
   </body>
 </html>
