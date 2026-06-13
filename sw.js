@@ -21,6 +21,7 @@ const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
   "./login.html",
+  "./manifest.json",
   "./assets/auth-DgayE_hj.js",
   "./assets/auth-DHZMF2cQ.css",
   "./assets/favicon-a5-zD-vB.png",
