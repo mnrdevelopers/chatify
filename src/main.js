@@ -63,13 +63,6 @@ const RINGTONE_SRC = 'https://assets.mixkit.co/active_storage/sfx/1359/1359-prev
       src.start(0);
       ctx.resume().catch(() => {});
     } catch (_) {}
-    // Lazily set the ringtone src + preload so it's ready when a call arrives
-    // (No play/pause warm-up — that was causing audible glitches on Android)
-    const ringtone = document.getElementById('ringtone-audio');
-    if (ringtone && (!ringtone.src || ringtone.src === window.location.href)) {
-      ringtone.src = RINGTONE_SRC;
-      ringtone.load();
-    }
   };
   // once:true means each listener auto-removes after its first fire
   document.addEventListener('touchstart', unlock, { once: true, capture: true, passive: true });
