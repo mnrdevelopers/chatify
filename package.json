@@ -15,7 +15,7 @@
     "vite": "^8.0.1"
   },
   "dependencies": {
-    "@pusher/push-notifications-server": "^1.3.0",
+    "@pusher/push-notifications-server": "^1.2.7",
     "@pusher/push-notifications-web": "^1.1.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.0",
