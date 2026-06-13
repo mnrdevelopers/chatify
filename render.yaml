@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: chatify-server
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: BEAMS_INSTANCE_ID
+        sync: false   # Set manually in Render dashboard
+      - key: BEAMS_SECRET_KEY
+        sync: false   # Set manually in Render dashboard
+      - key: CLIENT_ORIGIN
+        sync: false   # Set to your GitHub Pages URL in Render dashboard
