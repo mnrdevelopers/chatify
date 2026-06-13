@@ -45,39 +45,36 @@ if ('serviceWorker' in navigator) {
 
 // ── iOS Audio Unlock ────────────────────────────────────────────────────────
 // iOS blocks ALL audio until a user gesture happens (tap, click, touchstart).
-// We create a silent AudioContext and resume it on the first interaction so
-// that the ringtone audio element can play when an incoming call arrives.
+// We prime the AudioContext on the first user interaction so the ringtone
+// can autoplay later without any audible warm-up blip.
+const RINGTONE_SRC = 'https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3';
 (function unlockIOSAudio() {
   let unlocked = false;
   const unlock = () => {
     if (unlocked) return;
-    // Resume AudioContext (required unlock gesture on iOS)
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const buf = ctx.createBuffer(1, 1, 22050);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(ctx.destination);
-    src.start(0);
-    ctx.resume().then(() => {
-      unlocked = true;
-      // Also warm up the ringtone element so it can autoplay later
-      const ringtone = document.getElementById('ringtone-audio');
-      if (ringtone) {
-        ringtone.volume = 0;
-        ringtone.play().then(() => {
-          ringtone.pause();
-          ringtone.currentTime = 0;
-          ringtone.volume = 1;
-        }).catch(() => {});
-      }
-      document.removeEventListener('touchstart', unlock, true);
-      document.removeEventListener('touchend', unlock, true);
-      document.removeEventListener('click', unlock, true);
-    });
+    unlocked = true; // set early to prevent re-entry on rapid multi-touch
+    // Prime a 1-sample silent AudioContext to satisfy iOS gesture requirement
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+      ctx.resume().catch(() => {});
+    } catch (_) {}
+    // Lazily set the ringtone src + preload so it's ready when a call arrives
+    // (No play/pause warm-up — that was causing audible glitches on Android)
+    const ringtone = document.getElementById('ringtone-audio');
+    if (ringtone && (!ringtone.src || ringtone.src === window.location.href)) {
+      ringtone.src = RINGTONE_SRC;
+      ringtone.load();
+    }
   };
-  document.addEventListener('touchstart', unlock, { once: false, capture: true, passive: true });
-  document.addEventListener('touchend',   unlock, { once: false, capture: true, passive: true });
-  document.addEventListener('click',      unlock, { once: false, capture: true, passive: true });
+  // once:true means each listener auto-removes after its first fire
+  document.addEventListener('touchstart', unlock, { once: true, capture: true, passive: true });
+  document.addEventListener('touchend',   unlock, { once: true, capture: true, passive: true });
+  document.addEventListener('click',      unlock, { once: true, capture: true, passive: true });
 })();
 
 // Screens
@@ -1384,8 +1381,13 @@ function initApp() {
               incomingCallType.textContent = callData.isVideoCall ? 'Incoming Video Call...' : 'Incoming Voice Call...';
               currentCallIsVideo = callData.isVideoCall;
               incomingCallModal.classList.remove('hidden');
+              // Ensure ringtone src is set (it may not be if user never tapped yet)
+              if (!ringtoneAudio.src || ringtoneAudio.src === window.location.href) {
+                ringtoneAudio.src = RINGTONE_SRC;
+                ringtoneAudio.load();
+              }
               ringtoneAudio.currentTime = 0;
-              ringtoneAudio.play().catch(e => console.warn("Autoplay blocked", e));
+              ringtoneAudio.play().catch(e => console.warn('Ringtone autoplay blocked', e));
               
               // Background Notify if hidden
               showLocalNotification("Incoming Call", `Incoming call from ${reqUser?.displayName || 'Someone'}`);
@@ -1420,7 +1422,7 @@ function initApp() {
         }
       } catch (err) {
         console.error("Auth initialization error:", err);
-        switchScreen(loginScreen);
+        window.location.replace('./login.html');
       }
     } else {
       currentChatId = null;
@@ -1431,7 +1433,7 @@ function initApp() {
       if (currentPresenceUnsubscribe) currentPresenceUnsubscribe();
       if (recentChatsUnsubscribe) recentChatsUnsubscribe();
       if (callListenerUnsubscribe) { callListenerUnsubscribe(); callListenerUnsubscribe = null; }
-      switchScreen(loginScreen);
+      window.location.replace('./login.html');
     }
   });
 

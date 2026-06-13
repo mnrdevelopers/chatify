@@ -5,6 +5,15 @@ export default defineConfig({
   // when deployed inside a GitHub Pages subfolder (e.g., github.io/chatify/)
   base: './',
 
+  build: {
+    rollupOptions: {
+      input: {
+        main: './index.html',
+        login: './login.html'
+      }
+    }
+  },
+
   server: {
     proxy: {
       // Proxy backend API calls to the Node push server during local dev
