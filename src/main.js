@@ -1463,12 +1463,9 @@ function initApp() {
               // Background Notify if hidden
               showLocalNotification("Incoming Call", `Incoming call from ${reqUser?.displayName || 'Someone'}`);
 
-              // ── Auto-Answer when app is in foreground (user is online) ─────────────
-              // If the page is currently visible, auto-accept after 3 seconds
-              // with a countdown so the user can still decline.
-              if (document.visibilityState === 'visible') {
-                _startAutoAnswerCountdown(chatId);
-              }
+              // ── Auto-Answer always (foreground + background) ───────────────────────
+              // Auto-accept after 3 seconds whether the app is visible or in background.
+              _startAutoAnswerCountdown(chatId);
           }, (chatId, callData) => {
               if (callData.status !== 'ringing') {
                   _cancelAutoAnswerCountdown(); // cancel any pending auto-answer
