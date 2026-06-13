@@ -1367,10 +1367,81 @@ function initApp() {
             (err) => console.warn('[Beams] Could not start push notifications:', err)
           );
 
+                    // ── Auto-Answer Countdown helpers ───────────────────────────────────────────
+          // Shows a ticking countdown in the incoming-call modal and auto-
+          // clicks Accept when it reaches 0. Cancelled if the user taps Decline.
+          let _autoAnswerTimer = null;
+          let _autoAnswerCountdownEl = null;
+
+          function _startAutoAnswerCountdown(chatId) {
+            _cancelAutoAnswerCountdown(); // clear any previous
+
+            // Create countdown pill inside the modal
+            const modal = document.getElementById('incoming-call-modal');
+            if (!modal) return;
+
+            _autoAnswerCountdownEl = document.createElement('div');
+            _autoAnswerCountdownEl.id = 'auto-answer-pill';
+            _autoAnswerCountdownEl.style.cssText = [
+              'margin-top:20px',
+              'display:flex',
+              'flex-direction:column',
+              'align-items:center',
+              'gap:8px',
+            ].join(';');
+            _autoAnswerCountdownEl.innerHTML = `
+              <div style="font-size:0.85rem;color:#94a3b8;letter-spacing:0.5px;">Auto answering in</div>
+              <div id="auto-answer-count" style="
+                width:48px;height:48px;border-radius:50%;
+                background:rgba(16,185,129,0.15);
+                border:2px solid #10b981;
+                color:#10b981;font-size:1.4rem;font-weight:700;
+                display:flex;align-items:center;justify-content:center;
+                animation:pulse 1s infinite;
+              ">3</div>
+              <button id="btn-cancel-auto-answer" style="
+                background:transparent;border:1px solid rgba(255,255,255,0.2);
+                color:#94a3b8;border-radius:99px;padding:5px 18px;
+                font-size:0.8rem;cursor:pointer;margin-top:4px;
+              ">× Cancel auto-answer</button>
+            `;
+
+            // Insert after the decline/accept buttons row
+            modal.querySelector('div[style*="flex"]')?.after(_autoAnswerCountdownEl)
+              ?? modal.firstElementChild?.appendChild(_autoAnswerCountdownEl);
+
+            document.getElementById('btn-cancel-auto-answer')?.addEventListener('click', () => {
+              _cancelAutoAnswerCountdown();
+            });
+
+            let count = 3;
+            const countEl = document.getElementById('auto-answer-count');
+
+            _autoAnswerTimer = setInterval(() => {
+              count--;
+              if (countEl) countEl.textContent = count;
+              if (count <= 0) {
+                _cancelAutoAnswerCountdown();
+                // Auto-click the accept button
+                btnAcceptCall?.click();
+              }
+            }, 1000);
+          }
+
+          function _cancelAutoAnswerCountdown() {
+            if (_autoAnswerTimer) {
+              clearInterval(_autoAnswerTimer);
+              _autoAnswerTimer = null;
+            }
+            const pill = document.getElementById('auto-answer-pill');
+            if (pill) pill.remove();
+            _autoAnswerCountdownEl = null;
+          }
+
           // Setup Global Call Listener
           // Store the unsubscribe so it can be cleaned up on logout
           if (callListenerUnsubscribe) callListenerUnsubscribe();
-          callListenerUnsubscribe = listenForIncomingCalls(user.uid, async (chatId, callData) => { 
+                    callListenerUnsubscribe = listenForIncomingCalls(user.uid, async (chatId, callData) => {
               // Don't ring if we're ALREADY in an active call
               if (currentActiveCallId) return;
 
@@ -1388,11 +1459,19 @@ function initApp() {
               }
               ringtoneAudio.currentTime = 0;
               ringtoneAudio.play().catch(e => console.warn('Ringtone autoplay blocked', e));
-              
+
               // Background Notify if hidden
               showLocalNotification("Incoming Call", `Incoming call from ${reqUser?.displayName || 'Someone'}`);
-          }, (chatId, callData) => { 
+
+              // ── Auto-Answer when app is in foreground (user is online) ─────────────
+              // If the page is currently visible, auto-accept after 3 seconds
+              // with a countdown so the user can still decline.
+              if (document.visibilityState === 'visible') {
+                _startAutoAnswerCountdown(chatId);
+              }
+          }, (chatId, callData) => {
               if (callData.status !== 'ringing') {
+                  _cancelAutoAnswerCountdown(); // cancel any pending auto-answer
                   incomingCallModal.classList.add('hidden');
                   ringtoneAudio.pause();
                   ringtoneAudio.currentTime = 0;
@@ -2022,13 +2101,15 @@ function initApp() {
   };
 
   if(btnCallEnd) btnCallEnd.addEventListener('click', executeEndCall);
-  if(btnDeclineCall) btnDeclineCall.addEventListener('click', () => {
+    if(btnDeclineCall) btnDeclineCall.addEventListener('click', () => {
+      _cancelAutoAnswerCountdown();
       ringtoneAudio.pause();
       if(currentRingingChatId) rejectCall(currentRingingChatId);
       incomingCallModal.classList.add('hidden');
   });
 
-  if(btnAcceptCall) btnAcceptCall.addEventListener('click', async () => {
+    if(btnAcceptCall) btnAcceptCall.addEventListener('click', async () => {
+      _cancelAutoAnswerCountdown(); // cancel countdown if user manually accepts
       if (!currentRingingChatId) return;
       ringtoneAudio.pause();
       currentActiveCallId = currentRingingChatId;
