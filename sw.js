@@ -21,13 +21,15 @@ const ASSETS_TO_CACHE = [
   "./favicon.svg",
   "./icon.svg",
   "./icons.svg",
-  "./assets/auth-DgayE_hj.js",
   "./assets/auth-DHZMF2cQ.css",
+  "./assets/auth-t0CJKOzj.js",
   "./assets/favicon-a5-zD-vB.png",
-  "./assets/index.esm-DIsPQHip.js",
-  "./assets/login-BtumadGz.js",
-  "./assets/main-Ckirs_7f.js",
-  "./assets/manifest-D1h_DOwc.json"
+  "./assets/firebase-config-N-L0v_2X.js",
+  "./assets/index.esm-BWZxc9_b.js",
+  "./assets/login-CCt7FtQh.js",
+  "./assets/main-vWtgLv_e.js",
+  "./assets/manifest-D1h_DOwc.json",
+  "./assets/rolldown-runtime-WNZMJCWm.js"
 ];
 
 // ── Install ────────────────────────────────────────────────────────────────
