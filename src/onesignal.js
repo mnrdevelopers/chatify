@@ -68,11 +68,14 @@ export async function initOneSignal(firebaseUid, onSuccess, onError) {
   try {
     const OneSignal = await waitForOneSignal();
 
+    // Determine base directory dynamically to support GitHub Pages subfolder (e.g., /chatify/)
+    const baseDir = window.location.pathname.includes('/chatify') ? '/chatify/' : '/';
+
     // ── Initialize (safe to call multiple times — OneSignal guards internally) ──
     await OneSignal.init({
       appId: ONESIGNAL_APP_ID,
-      serviceWorkerParam: { scope: '/' },
-      serviceWorkerPath: 'OneSignalSDKWorker.js',
+      serviceWorkerParam: { scope: baseDir },
+      serviceWorkerPath: baseDir + 'OneSignalSDKWorker.js',
       allowLocalhostAsSecureOrigin: true,
       notifyButton: { enable: false },
     });
