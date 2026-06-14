@@ -26,7 +26,7 @@ const ASSETS_TO_CACHE = [
   "./assets/favicon-a5-zD-vB.png",
   "./assets/index.esm-DIsPQHip.js",
   "./assets/login-BtumadGz.js",
-  "./assets/main-CK5FkyqL.js",
+  "./assets/main-Ckirs_7f.js",
   "./assets/manifest-D1h_DOwc.json"
 ];
 
