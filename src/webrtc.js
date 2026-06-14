@@ -159,20 +159,29 @@ export async function startCall(chatId, myUid, otherUid, isVideoCall, localVideo
      updatedAt: Date.now()
   });
 
-  // ── Pusher Beams: push call notification to recipient ──────────────────────
-  // This fires even if the recipient has the app closed, so they get an OS alert.
-  const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+  // ── OneSignal Push Notification: push call notification to recipient ────────
+  let osSubscriptionId = null;
+  try {
+    const userSnap = await getDoc(doc(db, 'users', otherUid));
+    if (userSnap.exists()) {
+      osSubscriptionId = userSnap.data().osSubscriptionId;
+    }
+  } catch (err) {
+    console.warn('[OneSignal] Failed to fetch recipient user doc for call push:', err);
+  }
+
   const callerName = auth.currentUser?.displayName || 'Someone';
-  fetch(`${serverUrl}/notify/call`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      recipientUid: otherUid,
-      callerName,
-      isVideoCall,
-      chatId,
-    }),
-  }).catch((err) => console.warn('[Beams] Call push trigger failed (server offline?):', err));
+  if (osSubscriptionId) {
+    import('./onesignal.js').then(({ sendOneSignalPush }) => {
+      sendOneSignalPush(
+        osSubscriptionId,
+        callerName,
+        isVideoCall ? 'Incoming Video Call' : 'Incoming Voice Call',
+        chatId,
+        'call'
+      );
+    }).catch((err) => console.warn('[OneSignal] Call push trigger failed:', err));
+  }
 
   // Missed Call Timeout (45 seconds)
   const ringingTimeout = setTimeout(async () => {

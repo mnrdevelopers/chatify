@@ -150,8 +150,10 @@ export async function sendMessage(chatId, otherUser, text, imageUrl = null, audi
     // Check if sender is blocked by receiver to enforce phantom behavior securely
     const targetUserDoc = await getDoc(doc(db, 'users', otherUser.uid));
     let amIBlocked = false;
+    let osSubscriptionId = null;
     if (targetUserDoc.exists()) {
        amIBlocked = (targetUserDoc.data().blockedUsers || []).includes(uid);
+       osSubscriptionId = targetUserDoc.data().osSubscriptionId;
     }
 
     const msgPayload = {
@@ -194,19 +196,12 @@ export async function sendMessage(chatId, otherUser, text, imageUrl = null, audi
           updatedAt: serverTimestamp(),
         }, { merge: true });
 
-        // ── Pusher Beams: trigger push to recipient if they are offline ─────────
-        // The server checks if the user is online via Socket.IO and skips if so.
-        const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
-        fetch(`${serverUrl}/notify/message`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            recipientUid: otherUser.uid,
-            senderName: displayName || 'Someone',
-            messageText: lastMsgPreview,
-            chatId,
-          }),
-        }).catch((err) => console.warn('[Beams] Message push trigger failed (server offline?):', err));
+        // ── OneSignal Push Notification: trigger push directly from client ──────
+        if (osSubscriptionId) {
+          import('./onesignal.js').then(({ sendOneSignalPush }) => {
+            sendOneSignalPush(osSubscriptionId, displayName || 'Someone', lastMsgPreview, chatId, 'message');
+          }).catch((err) => console.warn('[OneSignal] Push trigger failed:', err));
+        }
     }
     
   } catch (error) {
