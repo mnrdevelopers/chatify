@@ -1,1 +1,0 @@
-import{G as e,g as t,v as n,x as r}from"./index.esm-PTixQjPe.js";export{e as collection,t as onSnapshot,n as query,r as where};

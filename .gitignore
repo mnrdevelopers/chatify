@@ -1,8 +1,12 @@
-# Ignore everything in the repository root
-/*
+node_modules/
+.env
+.env.local
+.env.*.local
+docs/
+.vite/
+.vscode/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Except the docs directory (the build folder) and its contents
-!/docs/
-
-# Keep tracking .gitignore
-!/.gitignore

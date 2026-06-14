@@ -1,39 +1,24 @@
 /**
- * service-worker.js — Chatify Enhanced Service Worker
+ * sw.js — Chatify Service Worker
  *
- * This service worker handles:
+ * Handles:
  *   1. Static asset caching (PWA offline support)
- *   2. Pusher Beams push notifications via importScripts delegation
- *   3. Push events (message + call notifications)
- *   4. Notification clicks with deep-link routing
+ *   2. OneSignal push notification delegation
+ *   3. Notification clicks with deep-link routing
  *
- * Integrating Beams into an existing SW:
- *   https://pusher.com/docs/beams/guides/existing-service-worker/
+ * OneSignal registers its OWN worker (OneSignalSDKWorker.js) for push delivery.
+ * This file handles PWA caching + notification click routing for the app shell.
  */
 
-// ── Delegate push handling to Pusher Beams ─────────────────────────────────
-// This must come before any other push/notificationclick listeners.
-importScripts('https://js.pusher.com/beams/service-worker.js');
-
 // ── Cache Config ───────────────────────────────────────────────────────────
-const CACHE_NAME = 'chatify-pwa-v6';
+const CACHE_NAME = 'chatify-pwa-v7';
 const ASSETS_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./login.html",
-  "./manifest.json",
-  "./favicon.png",
-  "./favicon.svg",
-  "./icon.svg",
-  "./icons.svg",
-  "./assets/auth-DHZMF2cQ.css",
-  "./assets/auth-Kwxen8rd.js",
-  "./assets/favicon-a5-zD-vB.png",
-  "./assets/index.esm-BFwPbJ--.js",
-  "./assets/index.esm-PTixQjPe.js",
-  "./assets/login-DOKUrOmi.js",
-  "./assets/main-BOGtr3Uc.js",
-  "./assets/manifest-D1h_DOwc.json"
+  './',
+  './index.html',
+  './style.css',
+  './light-mode.css',
+  './icon.svg',
+  './manifest.json',
 ];
 
 // ── Install ────────────────────────────────────────────────────────────────
@@ -66,17 +51,15 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Bypass Firebase, Pusher, and API calls — always fresh
+  // Bypass Firebase, OneSignal, and external API calls — always fresh
   if (
     url.hostname.includes('firebase') ||
     url.hostname.includes('googleapis') ||
     url.hostname.includes('firestore') ||
-    url.hostname.includes('pusher') ||
-    url.hostname.includes('pushnotifications') ||
-    url.pathname.startsWith('/beams-auth') ||
-    url.pathname.startsWith('/notify/')
+    url.hostname.includes('onesignal.com') ||
+    url.hostname.includes('gstatic.com')
   ) {
-    return; // Let the browser handle it natively
+    return;
   }
 
   if (!url.protocol.startsWith('http')) return;
@@ -103,19 +86,17 @@ self.addEventListener('fetch', (event) => {
 });
 
 // ── Notification Click ─────────────────────────────────────────────────────
-// Beams handles the basic notificationclick, but we extend it here for
-// deep-linking into the correct chat or accepting an incoming call.
+// OneSignal's worker handles most notificationclicks. This is a fallback
+// for any notifications triggered directly from this SW (e.g., foreground).
 self.addEventListener('notificationclick', (event) => {
   const notification = event.notification;
   notification.close();
 
-  // Beams attaches push payload as notification.data
-  const data    = notification.data || {};
-  const type    = data.type;
-  const chatId  = data.chatId;
-  const deepLink = notification.data?.url || './';
+  const data     = notification.data || {};
+  const type     = data.type;
+  const chatId   = data.chatId;
+  const deepLink = data.url || './';
 
-  // Build the target URL based on notification type
   let targetUrl = './';
   if (type === 'message' && chatId) {
     targetUrl = `./?chatId=${chatId}`;
@@ -129,7 +110,6 @@ self.addEventListener('notificationclick', (event) => {
     clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // If app is already open, focus it and post a message to navigate
         for (const client of clientList) {
           if ('focus' in client) {
             client.focus();
@@ -137,17 +117,13 @@ self.addEventListener('notificationclick', (event) => {
             return;
           }
         }
-        // App is closed — open a new window
         return clients.openWindow(targetUrl);
       })
   );
 });
 
-// ── Push (manual fallback, in case not caught by Beams SW) ─────────────────
-// Beams' importScripts handles most pushes. This is a safety net for
-// custom payloads that fall through.
+// ── Push fallback (for raw non-OneSignal pushes) ───────────────────────────
 self.addEventListener('push', (event) => {
-  // Beams' SW script processes first. Only handle raw pushes here.
   let payload = {};
   try {
     payload = event.data ? event.data.json() : {};
