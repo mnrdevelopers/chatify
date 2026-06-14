@@ -26,12 +26,13 @@ const ASSETS_TO_CACHE = [
   "./favicon.svg",
   "./icon.svg",
   "./icons.svg",
-  "./assets/auth-DgayE_hj.js",
   "./assets/auth-DHZMF2cQ.css",
+  "./assets/auth-Kwxen8rd.js",
   "./assets/favicon-a5-zD-vB.png",
-  "./assets/index.esm-DIsPQHip.js",
-  "./assets/login-BtumadGz.js",
-  "./assets/main-CJ46yQ-A.js",
+  "./assets/index.esm-BFwPbJ--.js",
+  "./assets/index.esm-PTixQjPe.js",
+  "./assets/login-DOKUrOmi.js",
+  "./assets/main-BOGtr3Uc.js",
   "./assets/manifest-D1h_DOwc.json"
 ];
 
