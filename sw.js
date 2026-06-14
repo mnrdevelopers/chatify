@@ -27,7 +27,7 @@ const ASSETS_TO_CACHE = [
   "./assets/firebase-config-N-L0v_2X.js",
   "./assets/index.esm-BWZxc9_b.js",
   "./assets/login-CCt7FtQh.js",
-  "./assets/main-vWtgLv_e.js",
+  "./assets/main-OBa4vV23.js",
   "./assets/manifest-D1h_DOwc.json",
   "./assets/rolldown-runtime-WNZMJCWm.js"
 ];
