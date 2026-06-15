@@ -375,9 +375,18 @@ function formatLastSeen(dateObj) {
   }
 }
 
+function convertToDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  if (typeof val.toDate === 'function') return val.toDate();
+  if (typeof val.seconds === 'number') return new Date(val.seconds * 1000 + Math.floor((val.nanoseconds || 0) / 1000000));
+  return new Date(val);
+}
+
 function formatOnlineDuration(lastActiveObj) {
   if (!lastActiveObj) return 'Online';
-  const lastActiveDate = lastActiveObj instanceof Date ? lastActiveObj : lastActiveObj.toDate?.() || new Date(lastActiveObj);
+  const lastActiveDate = convertToDate(lastActiveObj);
+  if (!lastActiveDate || isNaN(lastActiveDate.getTime())) return 'Online';
   const now = new Date();
   const diffMs = now.getTime() - lastActiveDate.getTime();
   const diffSecs = Math.max(0, Math.floor(diffMs / 1000));
@@ -405,36 +414,39 @@ function formatOnlineDuration(lastActiveObj) {
 
 function formatOfflineStatus(lastActive, wentOnlineAt) {
   if (!lastActive) return 'offline';
-  const lastActiveDate = lastActive.toDate ? lastActive.toDate() : new Date(lastActive);
+  const lastActiveDate = convertToDate(lastActive);
+  if (!lastActiveDate || isNaN(lastActiveDate.getTime())) return 'offline';
   const lastSeenText = formatLastSeen(lastActiveDate);
   
   if (wentOnlineAt) {
-    const wentOnlineDate = wentOnlineAt.toDate ? wentOnlineAt.toDate() : new Date(wentOnlineAt);
-    const diffMs = lastActiveDate.getTime() - wentOnlineDate.getTime();
-    const diffSecs = Math.max(0, Math.floor(diffMs / 1000));
-    
-    if (diffSecs > 0) {
-      let durationText = '';
-      if (diffSecs < 60) {
-        durationText = `${diffSecs}s`;
-      } else {
-        const diffMins = Math.floor(diffSecs / 60);
-        const remSecs = diffSecs % 60;
-        if (diffMins < 60) {
-          durationText = `${diffMins}m ${remSecs}s`;
+    const wentOnlineDate = convertToDate(wentOnlineAt);
+    if (wentOnlineDate && !isNaN(wentOnlineDate.getTime())) {
+      const diffMs = lastActiveDate.getTime() - wentOnlineDate.getTime();
+      const diffSecs = Math.max(0, Math.floor(diffMs / 1000));
+      
+      if (diffSecs >= 0) {
+        let durationText = '';
+        if (diffSecs < 60) {
+          durationText = `${diffSecs}s`;
         } else {
-          const diffHours = Math.floor(diffMins / 60);
-          const remMins = diffMins % 60;
-          if (diffHours < 24) {
-            durationText = `${diffHours}h ${remMins}m`;
+          const diffMins = Math.floor(diffSecs / 60);
+          const remSecs = diffSecs % 60;
+          if (diffMins < 60) {
+            durationText = `${diffMins}m ${remSecs}s`;
           } else {
-            const diffDays = Math.floor(diffHours / 24);
-            const remHours = diffHours % 24;
-            durationText = `${diffDays}d ${remHours}h`;
+            const diffHours = Math.floor(diffMins / 60);
+            const remMins = diffMins % 60;
+            if (diffHours < 24) {
+              durationText = `${diffHours}h ${remMins}m`;
+            } else {
+              const diffDays = Math.floor(diffHours / 24);
+              const remHours = diffHours % 24;
+              durationText = `${diffDays}d ${remHours}h`;
+            }
           }
         }
+        return `${lastSeenText} (Online for ${durationText})`;
       }
-      return `${lastSeenText} (Online for ${durationText})`;
     }
   }
   return lastSeenText;
