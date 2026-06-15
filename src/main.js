@@ -252,6 +252,7 @@ let currentOtherUser = null;
 let currentChatUnsubscribe = null;
 let currentTypingUnsubscribe = null;
 let currentPresenceUnsubscribe = null;
+let currentPresenceTimer = null;
 let recentChatsUnsubscribe = null;
 let callListenerUnsubscribe = null; // cleanup for listenForIncomingCalls
 let typingTimeout = null;
@@ -373,6 +374,35 @@ function formatLastSeen(dateObj) {
     return `last seen ${full} at ${timeStr}`;
   }
 }
+
+function formatOnlineDuration(lastActiveObj) {
+  if (!lastActiveObj) return 'Online';
+  const lastActiveDate = lastActiveObj instanceof Date ? lastActiveObj : lastActiveObj.toDate?.() || new Date(lastActiveObj);
+  const now = new Date();
+  const diffMs = now.getTime() - lastActiveDate.getTime();
+  const diffSecs = Math.max(0, Math.floor(diffMs / 1000));
+  
+  if (diffSecs < 60) {
+    return `Online for ${diffSecs}s`;
+  }
+  
+  const diffMins = Math.floor(diffSecs / 60);
+  const remSecs = diffSecs % 60;
+  if (diffMins < 60) {
+    return `Online for ${diffMins}m ${remSecs}s`;
+  }
+  
+  const diffHours = Math.floor(diffMins / 60);
+  const remMins = diffMins % 60;
+  if (diffHours < 24) {
+    return `Online for ${diffHours}h ${remMins}m`;
+  }
+  
+  const diffDays = Math.floor(diffHours / 24);
+  const remHours = diffHours % 24;
+  return `Online for ${diffDays}d ${remHours}h`;
+}
+
 
 // Evaluate privacy rules and return the correct avatar
 function getDisplayAvatar(otherUserObj) {
@@ -1070,6 +1100,7 @@ function startChat(otherUser) {
   if (currentChatUnsubscribe) currentChatUnsubscribe();
   if (currentTypingUnsubscribe) currentTypingUnsubscribe();
   if (currentPresenceUnsubscribe) currentPresenceUnsubscribe();
+  if (currentPresenceTimer) { clearInterval(currentPresenceTimer); currentPresenceTimer = null; }
 
   // Reset for new conversation
   _isFirstLoad = true;
@@ -1121,6 +1152,11 @@ function startChat(otherUser) {
   });
 
   currentPresenceUnsubscribe = listenToPresence(otherUid, (status, lastActive) => {
+    if (currentPresenceTimer) {
+      clearInterval(currentPresenceTimer);
+      currentPresenceTimer = null;
+    }
+
     const amIBlockedByThem = currentOtherUser.blockedUsers && currentOtherUser.blockedUsers.includes(myUid);
     const didIBlockThem = myProfileData?.blockedUsers?.includes(otherUid);
     if (amIBlockedByThem || didIBlockThem) {
@@ -1129,8 +1165,16 @@ function startChat(otherUser) {
     }
     
     if (status === 'online') {
-      chatUserStatusEl.textContent = 'Online';
       chatUserStatusEl.style.color = '#10b981';
+      const updateText = () => {
+        if (lastActive) {
+          chatUserStatusEl.textContent = formatOnlineDuration(lastActive);
+        } else {
+          chatUserStatusEl.textContent = 'Online';
+        }
+      };
+      updateText();
+      currentPresenceTimer = setInterval(updateText, 1000);
     } else {
       chatUserStatusEl.style.color = '#94a3b8';
       chatUserStatusEl.textContent = lastActive ? formatLastSeen(lastActive.toDate()) : 'offline';
@@ -1564,6 +1608,8 @@ function initApp() {
       if (currentChatUnsubscribe) currentChatUnsubscribe();
       if (currentTypingUnsubscribe) currentTypingUnsubscribe();
       if (currentPresenceUnsubscribe) currentPresenceUnsubscribe();
+      if (currentPresenceTimer) { clearInterval(currentPresenceTimer); currentPresenceTimer = null; }
+      if (cpPresenceTimer) { clearInterval(cpPresenceTimer); cpPresenceTimer = null; }
       if (recentChatsUnsubscribe) recentChatsUnsubscribe();
       if (callListenerUnsubscribe) { callListenerUnsubscribe(); callListenerUnsubscribe = null; }
       // FCM cleanup is handled on logout via stopFCM (called from btnLogout handler)
@@ -1596,6 +1642,7 @@ function initApp() {
 
   // ─── Contact Profile Screen ────────────────────────────────────────
   let cpPresenceUnsubscribe = null; // separate live status listener for profile screen
+  let cpPresenceTimer = null;
 
   function openContactProfile() {
     if (!currentOtherUser) return;
@@ -1649,12 +1696,28 @@ function initApp() {
 
     // Live presence listener
     if (cpPresenceUnsubscribe) cpPresenceUnsubscribe();
+    if (cpPresenceTimer) {
+      clearInterval(cpPresenceTimer);
+      cpPresenceTimer = null;
+    }
     cpPresenceUnsubscribe = listenToPresence(user.uid, (status, lastActive) => {
+      if (cpPresenceTimer) {
+        clearInterval(cpPresenceTimer);
+        cpPresenceTimer = null;
+      }
       const isOnline = status === 'online';
       if (cpStatusDot) cpStatusDot.classList.toggle('online', isOnline);
       if (cpStatusText) {
         if (isOnline) {
-          cpStatusText.textContent = 'Online';
+          const updateText = () => {
+            if (lastActive) {
+              cpStatusText.textContent = formatOnlineDuration(lastActive);
+            } else {
+              cpStatusText.textContent = 'Online';
+            }
+          };
+          updateText();
+          cpPresenceTimer = setInterval(updateText, 1000);
         } else {
           cpStatusText.textContent = lastActive ? formatLastSeen(lastActive.toDate()) : 'Offline';
         }
@@ -1665,6 +1728,7 @@ function initApp() {
   function closeContactProfile() {
     contactProfileScreen.classList.add('hidden');
     if (cpPresenceUnsubscribe) { cpPresenceUnsubscribe(); cpPresenceUnsubscribe = null; }
+    if (cpPresenceTimer) { clearInterval(cpPresenceTimer); cpPresenceTimer = null; }
   }
 
   // Open on avatar / header tap
@@ -2475,10 +2539,12 @@ function initApp() {
     if (contactProfileScreen && !contactProfileScreen.classList.contains('hidden')) {
       contactProfileScreen.classList.add('hidden');
       if (cpPresenceUnsubscribe) { cpPresenceUnsubscribe(); cpPresenceUnsubscribe = null; }
+      if (cpPresenceTimer) { clearInterval(cpPresenceTimer); cpPresenceTimer = null; }
     }
     if (currentChatUnsubscribe) currentChatUnsubscribe();
     if (currentTypingUnsubscribe) currentTypingUnsubscribe();
     if (currentPresenceUnsubscribe) currentPresenceUnsubscribe();
+    if (currentPresenceTimer) { clearInterval(currentPresenceTimer); currentPresenceTimer = null; }
     if (currentChatId) setTypingStatus(currentChatId, false);
     currentChatId = null;
     currentOtherUser = null;
