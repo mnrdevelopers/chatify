@@ -21,13 +21,13 @@ const ASSETS_TO_CACHE = [
   "./favicon.svg",
   "./icon.svg",
   "./icons.svg",
+  "./assets/auth-CkxBG8sY.js",
   "./assets/auth-DHZMF2cQ.css",
-  "./assets/auth-t0CJKOzj.js",
   "./assets/favicon-a5-zD-vB.png",
   "./assets/firebase-config-N-L0v_2X.js",
   "./assets/index.esm-BWZxc9_b.js",
-  "./assets/login-CCt7FtQh.js",
-  "./assets/main-DlJlF9HZ.js",
+  "./assets/login-vCuvenXU.js",
+  "./assets/main-BgbdSYzK.js",
   "./assets/manifest-D1h_DOwc.json",
   "./assets/rolldown-runtime-WNZMJCWm.js"
 ];
