@@ -253,10 +253,14 @@ export async function getContacts(myUid) {
 export async function updateUserPresence(status) {
   if (!auth.currentUser) return;
   try {
-    await setDoc(doc(db, 'users', auth.currentUser.uid), {
+    const payload = {
       status,
       lastActive: serverTimestamp()
-    }, { merge: true });
+    };
+    if (status === 'online') {
+      payload.wentOnlineAt = serverTimestamp();
+    }
+    await setDoc(doc(db, 'users', auth.currentUser.uid), payload, { merge: true });
   } catch (e) {
     console.warn("Failed to update presence", e);
   }
@@ -266,9 +270,10 @@ export function listenToUserPresence(uid, callback) {
   if (!uid) return () => {};
   return onSnapshot(doc(db, 'users', uid), (docSnap) => {
     if (docSnap.exists()) {
-      callback(docSnap.data().status || 'offline', docSnap.data().lastActive);
+      const data = docSnap.data();
+      callback(data.status || 'offline', data.lastActive, data.wentOnlineAt);
     } else {
-      callback('offline', null);
+      callback('offline', null, null);
     }
   });
 }

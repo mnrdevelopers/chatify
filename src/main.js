@@ -403,6 +403,43 @@ function formatOnlineDuration(lastActiveObj) {
   return `Online for ${diffDays}d ${remHours}h`;
 }
 
+function formatOfflineStatus(lastActive, wentOnlineAt) {
+  if (!lastActive) return 'offline';
+  const lastActiveDate = lastActive.toDate ? lastActive.toDate() : new Date(lastActive);
+  const lastSeenText = formatLastSeen(lastActiveDate);
+  
+  if (wentOnlineAt) {
+    const wentOnlineDate = wentOnlineAt.toDate ? wentOnlineAt.toDate() : new Date(wentOnlineAt);
+    const diffMs = lastActiveDate.getTime() - wentOnlineDate.getTime();
+    const diffSecs = Math.max(0, Math.floor(diffMs / 1000));
+    
+    if (diffSecs > 0) {
+      let durationText = '';
+      if (diffSecs < 60) {
+        durationText = `${diffSecs}s`;
+      } else {
+        const diffMins = Math.floor(diffSecs / 60);
+        const remSecs = diffSecs % 60;
+        if (diffMins < 60) {
+          durationText = `${diffMins}m ${remSecs}s`;
+        } else {
+          const diffHours = Math.floor(diffMins / 60);
+          const remMins = diffMins % 60;
+          if (diffHours < 24) {
+            durationText = `${diffHours}h ${remMins}m`;
+          } else {
+            const diffDays = Math.floor(diffHours / 24);
+            const remHours = diffHours % 24;
+            durationText = `${diffDays}d ${remHours}h`;
+          }
+        }
+      }
+      return `${lastSeenText} (Online for ${durationText})`;
+    }
+  }
+  return lastSeenText;
+}
+
 
 // Evaluate privacy rules and return the correct avatar
 function getDisplayAvatar(otherUserObj) {
@@ -1151,7 +1188,7 @@ function startChat(otherUser) {
     }
   });
 
-  currentPresenceUnsubscribe = listenToPresence(otherUid, (status, lastActive) => {
+  currentPresenceUnsubscribe = listenToPresence(otherUid, (status, lastActive, wentOnlineAt) => {
     if (currentPresenceTimer) {
       clearInterval(currentPresenceTimer);
       currentPresenceTimer = null;
@@ -1167,8 +1204,8 @@ function startChat(otherUser) {
     if (status === 'online') {
       chatUserStatusEl.style.color = '#10b981';
       const updateText = () => {
-        if (lastActive) {
-          chatUserStatusEl.textContent = formatOnlineDuration(lastActive);
+        if (wentOnlineAt || lastActive) {
+          chatUserStatusEl.textContent = formatOnlineDuration(wentOnlineAt || lastActive);
         } else {
           chatUserStatusEl.textContent = 'Online';
         }
@@ -1177,7 +1214,7 @@ function startChat(otherUser) {
       currentPresenceTimer = setInterval(updateText, 1000);
     } else {
       chatUserStatusEl.style.color = '#94a3b8';
-      chatUserStatusEl.textContent = lastActive ? formatLastSeen(lastActive.toDate()) : 'offline';
+      chatUserStatusEl.textContent = formatOfflineStatus(lastActive, wentOnlineAt);
     }
   });
 }
@@ -1700,7 +1737,7 @@ function initApp() {
       clearInterval(cpPresenceTimer);
       cpPresenceTimer = null;
     }
-    cpPresenceUnsubscribe = listenToPresence(user.uid, (status, lastActive) => {
+    cpPresenceUnsubscribe = listenToPresence(user.uid, (status, lastActive, wentOnlineAt) => {
       if (cpPresenceTimer) {
         clearInterval(cpPresenceTimer);
         cpPresenceTimer = null;
@@ -1710,8 +1747,8 @@ function initApp() {
       if (cpStatusText) {
         if (isOnline) {
           const updateText = () => {
-            if (lastActive) {
-              cpStatusText.textContent = formatOnlineDuration(lastActive);
+            if (wentOnlineAt || lastActive) {
+              cpStatusText.textContent = formatOnlineDuration(wentOnlineAt || lastActive);
             } else {
               cpStatusText.textContent = 'Online';
             }
@@ -1719,7 +1756,7 @@ function initApp() {
           updateText();
           cpPresenceTimer = setInterval(updateText, 1000);
         } else {
-          cpStatusText.textContent = lastActive ? formatLastSeen(lastActive.toDate()) : 'Offline';
+          cpStatusText.textContent = formatOfflineStatus(lastActive, wentOnlineAt);
         }
       }
     });
